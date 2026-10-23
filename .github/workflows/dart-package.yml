@@ -1,0 +1,30 @@
+name: Dart package
+
+on:
+  workflow_call:
+    inputs:
+      sdk:
+        description: Dart SDK version, for example 3.11.4
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dart-package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ inputs.sdk }}
+      - run: dart pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: dart analyze
+      - run: dart test
+      - run: dart run example/main.dart

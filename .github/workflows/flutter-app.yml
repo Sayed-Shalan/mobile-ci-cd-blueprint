@@ -1,0 +1,40 @@
+name: Flutter app
+
+on:
+  workflow_call:
+    inputs:
+      flutter-version:
+        description: Flutter stable version, for example 3.41.6
+        required: true
+        type: string
+      check-l10n:
+        description: Fail when flutter gen-l10n changes lib/l10n
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-app-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ inputs.flutter-version }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - if: inputs.check-l10n
+        run: flutter gen-l10n
+      - if: inputs.check-l10n
+        run: git diff --exit-code -- lib/l10n
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: flutter analyze
+      - run: flutter test
